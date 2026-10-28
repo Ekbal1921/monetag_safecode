@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Reward Center</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src='//libtl.com/sdk.js' data-zone='12080120' data-sdk='show_12080120'></script>
+    <style>
+        body { 
+            margin: 0; 
+            background: #0f172a; 
+            font-family: 'Segoe UI', sans-serif; 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+        }
+        .box { 
+            width: 340px; 
+            background: #1e293b; 
+            padding: 25px; 
+            border-radius: 20px; 
+            text-align: center; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+        }
+        h3 { 
+            color: #38bdf8; 
+            margin-bottom: 5px; 
+        }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+            margin-top: 15px; 
+        }
+        button { 
+            background: #334155; 
+            color: white; 
+            border: 1px solid #475569; 
+            padding: 12px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: 0.3s; 
+        }
+        button.completed { 
+            background: #059669; 
+            border-color: #10b981; 
+        }
+        button:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+        }
+        .progress-container { 
+            width: 100%; 
+            height: 6px; 
+            background: #334155; 
+            border-radius: 10px; 
+            margin-top: 20px; 
+        }
+        .progress-bar { 
+            height: 100%; 
+            width: 0%; 
+            background: #38bdf8; 
+            border-radius: 10px; 
+            transition: 0.3s; 
+        }
+        #status { 
+            margin-top: 15px; 
+            font-size: 14px; 
+            color: #94a3b8; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h3>Reward Tasks</h3>
+    <div id="status">Complete tasks to earn rewards</div>
+    <div class="grid" id="taskGrid"></div>
+    <div class="progress-container">
+        <div id="progress" class="progress-bar"></div>
+    </div>
+    <p style="font-size: 13px; color: #64748b; margin-top: 10px;">
+        Total Viewed: <span id="count">0</span>
+    </p>
+</div>
+
+<script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
+
+    let adCount = parseInt(localStorage.getItem('adCount')) || 0;
+    let isWaiting = false;
+    document.getElementById('count').innerText = adCount;
+
+    // টাস্ক বাটন তৈরি করা
+    const grid = document.getElementById('taskGrid');
+    for (let i = 1; i <= 10; i++) {
+        let btn = document.createElement('button');
+        btn.innerText = "Task " + i;
+        btn.id = "btn-" + i;
+        btn.onclick = () => handleTask(i);
+        grid.appendChild(btn);
+    }
+
+    function handleTask(id) {
+        if (isWaiting) {
+            if (tg?.showAlert) tg.showAlert("Please wait for the current cooldown!");
+            else alert("Please wait for the current cooldown!");
+            return;
+        }
+
+        if (typeof show_12080120 === "function") {
+            // ১. অ্যাড দেখানো
+            show_12080120();
+            
+            // ২. কাউন্ট বাড়ানো ও সেভ করা
+            adCount++;
+            localStorage.setItem('adCount', adCount);
+            document.getElementById('count').innerText = adCount;
+            
+            // ৩. বাটনের স্টাইল সম্পন্ন করা
+            const btn = document.getElementById("btn-" + id);
+            btn.classList.add('completed');
+            btn.innerText = "Done";
+            
+            // ৪. র‍্যান্ডম কুলডাউন শুরু (২০ থেকে ৪০ সেকেন্ড)
+            let randomTime = Math.floor(Math.random() * (40 - 20 + 1)) + 20;
+            startCooldown(randomTime);
+        } else {
+            if (tg?.showAlert) tg.showAlert("Ad server busy, try again!");
+            else alert("Ad server busy, try again!");
+        }
+    }
+
+    function startCooldown(seconds) {
+        isWaiting = true;
+        disableAll(true);
+        let timeLeft = seconds;
+        const progressBar = document.getElementById('progress');
+        const status = document.getElementById('status');
+
+        const timer = setInterval(() => {
+            timeLeft--;
+            let percent = ((seconds - timeLeft) / seconds) * 100;
+            progressBar.style.width = percent + "%";
+            
+            // টেমপ্লেট লিটারেল ঠিক করা হয়েছে
+            status.innerText = `Next task ready in ${timeLeft}s...`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                isWaiting = false;
+                disableAll(false);
+                progressBar.style.width = "0%";
+                status.innerText = "Ready for next task!";
+            }
+        }, 1000);
+    }
+
+    function disableAll(state) {
+        const buttons = document.querySelectorAll('#taskGrid button');
+        buttons.forEach(btn => {
+            if (!btn.classList.contains('completed')) {
+                btn.disabled = state;
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
